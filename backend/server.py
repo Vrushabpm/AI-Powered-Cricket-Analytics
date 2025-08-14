@@ -1,4 +1,4 @@
-from fastapi import FastAPI, APIRouter
+from fastapi import FastAPI, APIRouter, HTTPException, BackgroundTasks
 from dotenv import load_dotenv
 from starlette.middleware.cors import CORSMiddleware
 from motor.motor_asyncio import AsyncIOMotorClient
@@ -6,13 +6,18 @@ import os
 import logging
 from pathlib import Path
 from pydantic import BaseModel, Field
-from typing import List
+from typing import List, Dict, Any, Optional
 import uuid
 from datetime import datetime
-
+import asyncio
+from video_analysis.cricket_analyzer import CricketVideoAnalyzer
 
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
+
+# Create output directory
+OUTPUT_DIR = ROOT_DIR / "output"
+OUTPUT_DIR.mkdir(exist_ok=True)
 
 # MongoDB connection
 mongo_url = os.environ['MONGO_URL']
@@ -20,11 +25,13 @@ client = AsyncIOMotorClient(mongo_url)
 db = client[os.environ['DB_NAME']]
 
 # Create the main app without a prefix
-app = FastAPI()
+app = FastAPI(title="AthleteRise Cricket Analytics API")
 
 # Create a router with the /api prefix
 api_router = APIRouter(prefix="/api")
 
+# Initialize analyzer
+analyzer = CricketVideoAnalyzer(output_dir=str(OUTPUT_DIR))
 
 # Define Models
 class StatusCheck(BaseModel):
@@ -35,10 +42,62 @@ class StatusCheck(BaseModel):
 class StatusCheckCreate(BaseModel):
     client_name: str
 
+class AnalysisRequest(BaseModel):
+    video_url: str = "https://youtube.com/shorts/vSX3IRxGnNY"
+
+class AnalysisResult(BaseModel):
+    analysis_id: str
+    status: str  # "processing", "completed", "failed"
+    video_url: str
+    scores: Optional[Dict[str, Any]] = None
+    feedback: Optional[Dict[str, Any]] = None
+    created_at: datetime
+    completed_at: Optional[datetime] = None
+    error_message: Optional[str] = None
+
+# Global storage for analysis results (in production, use database)
+analysis_results: Dict[str, Dict] = {}
+
+# Background task for video analysis
+async def process_video_analysis(analysis_id: str, video_url: str):
+    """Background task to process cricket video analysis"""
+    try:
+        # Update status to processing
+        analysis_results[analysis_id]["status"] = "processing"
+        
+        # Run the analysis
+        result = await asyncio.to_thread(analyzer.analyze_video, video_url)
+        
+        # Update with results
+        analysis_results[analysis_id].update({
+            "status": "completed",
+            "scores": result["evaluation"]["scores"],
+            "feedback": result["evaluation"]["feedback"],
+            "metrics_summary": result["evaluation"]["metrics_summary"],
+            "completed_at": datetime.utcnow(),
+            "output_files": result.get("output_files", {})
+        })
+        
+        # Store in database
+        await db.cricket_analyses.insert_one({
+            "analysis_id": analysis_id,
+            "video_url": video_url,
+            "result": analysis_results[analysis_id],
+            "created_at": analysis_results[analysis_id]["created_at"]
+        })
+        
+    except Exception as e:
+        analysis_results[analysis_id].update({
+            "status": "failed",
+            "error_message": str(e),
+            "completed_at": datetime.utcnow()
+        })
+        logging.error(f"Analysis failed for {analysis_id}: {str(e)}")
+
 # Add your routes to the router instead of directly to app
 @api_router.get("/")
 async def root():
-    return {"message": "Hello World"}
+    return {"message": "AthleteRise Cricket Analytics API", "version": "1.0.0"}
 
 @api_router.post("/status", response_model=StatusCheck)
 async def create_status_check(input: StatusCheckCreate):
@@ -51,6 +110,43 @@ async def create_status_check(input: StatusCheckCreate):
 async def get_status_checks():
     status_checks = await db.status_checks.find().to_list(1000)
     return [StatusCheck(**status_check) for status_check in status_checks]
+
+@api_router.post("/analyze-video", response_model=Dict[str, str])
+async def start_video_analysis(request: AnalysisRequest, background_tasks: BackgroundTasks):
+    """Start cricket video analysis for the demo video"""
+    analysis_id = str(uuid.uuid4())
+    
+    # Initialize analysis record
+    analysis_results[analysis_id] = {
+        "analysis_id": analysis_id,
+        "status": "initiated",
+        "video_url": request.video_url,
+        "created_at": datetime.utcnow(),
+        "completed_at": None,
+        "error_message": None
+    }
+    
+    # Add background task
+    background_tasks.add_task(process_video_analysis, analysis_id, request.video_url)
+    
+    return {
+        "analysis_id": analysis_id,
+        "status": "initiated",
+        "message": "Cricket video analysis started. Use the analysis_id to check status."
+    }
+
+@api_router.get("/analysis/{analysis_id}", response_model=Dict[str, Any])
+async def get_analysis_result(analysis_id: str):
+    """Get analysis result by ID"""
+    if analysis_id not in analysis_results:
+        raise HTTPException(status_code=404, detail="Analysis not found")
+    
+    return analysis_results[analysis_id]
+
+@api_router.get("/analysis", response_model=List[Dict[str, Any]])
+async def get_all_analyses():
+    """Get all analysis results"""
+    return list(analysis_results.values())
 
 # Include the router in the main app
 app.include_router(api_router)
