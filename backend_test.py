@@ -201,8 +201,9 @@ class CricketAnalyticsBackendTester:
             self.test_results['error_details'].append(f"File Upload Processing: {str(e)}")
         
         return False
-        """Test starting video analysis"""
-        logger.info("Testing video analysis start...")
+    def test_video_analysis_start(self):
+        """Test starting video analysis (URL-based - for backward compatibility)"""
+        logger.info("Testing video analysis start (URL-based)...")
         try:
             analysis_data = {"video_url": self.test_video_url}
             response = requests.post(f"{self.api_url}/analyze-video", json=analysis_data, timeout=15)
@@ -210,8 +211,8 @@ class CricketAnalyticsBackendTester:
             if response.status_code == 200:
                 result = response.json()
                 if result.get("status") == "initiated" and "analysis_id" in result:
-                    self.analysis_id = result["analysis_id"]
-                    logger.info(f"✅ Video analysis started with ID: {self.analysis_id}")
+                    self.url_analysis_id = result["analysis_id"]
+                    logger.info(f"✅ URL-based video analysis started with ID: {self.url_analysis_id}")
                     self.test_results['video_analysis_start'] = True
                     return True
                 else:
