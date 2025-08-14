@@ -65,14 +65,14 @@ class AnalysisResult(BaseModel):
 analysis_results: Dict[str, Dict] = {}
 
 # Background task for video analysis
-async def process_video_analysis(analysis_id: str, video_url: str):
+async def process_video_analysis(analysis_id: str, video_path: str, is_uploaded: bool = False):
     """Background task to process cricket video analysis"""
     try:
         # Update status to processing
         analysis_results[analysis_id]["status"] = "processing"
         
         # Run the analysis
-        result = await asyncio.to_thread(analyzer.analyze_video, video_url)
+        result = await asyncio.to_thread(analyzer.analyze_video_file, video_path)
         
         # Update with results
         analysis_results[analysis_id].update({
@@ -81,13 +81,14 @@ async def process_video_analysis(analysis_id: str, video_url: str):
             "feedback": result["evaluation"]["feedback"],
             "metrics_summary": result["evaluation"]["metrics_summary"],
             "completed_at": datetime.utcnow(),
-            "output_files": result.get("output_files", {})
+            "output_files": result.get("output_files", {}),
+            "video_info": result.get("video_info", {})
         })
         
         # Store in database
         await db.cricket_analyses.insert_one({
             "analysis_id": analysis_id,
-            "video_url": video_url,
+            "video_source": "uploaded" if is_uploaded else "url",
             "result": analysis_results[analysis_id],
             "created_at": analysis_results[analysis_id]["created_at"]
         })
@@ -99,6 +100,13 @@ async def process_video_analysis(analysis_id: str, video_url: str):
             "completed_at": datetime.utcnow()
         })
         logging.error(f"Analysis failed for {analysis_id}: {str(e)}")
+        
+        # Clean up uploaded file on failure
+        if is_uploaded and os.path.exists(video_path):
+            try:
+                os.remove(video_path)
+            except:
+                pass
 
 # Add your routes to the router instead of directly to app
 @api_router.get("/")
