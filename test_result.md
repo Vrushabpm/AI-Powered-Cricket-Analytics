@@ -107,15 +107,18 @@ user_problem_statement: "AthleteRise – AI-Powered Cricket Analytics: Build a s
 backend:
   - task: "Cricket video download and processing"
     implemented: true
-    working: "NA"
+    working: false
     file: "/app/backend/video_analysis/cricket_analyzer.py"
-    stuck_count: 0
+    stuck_count: 1
     priority: "high"
-    needs_retesting: true
+    needs_retesting: false
     status_history:
       - working: "NA"
         agent: "main"
         comment: "Implemented CricketVideoAnalyzer class with YouTube video download using yt-dlp, MediaPipe pose estimation, and biomechanical analysis functions"
+      - working: false
+        agent: "testing"
+        comment: "YouTube video download fails due to bot protection: 'Sign in to confirm you're not a bot'. Core video processing pipeline tested and working. MediaPipe pose estimation, biomechanical calculations all functional. Issue is specifically with yt-dlp YouTube access."
 
   - task: "FastAPI endpoints for video analysis"
     implemented: true
