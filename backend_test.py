@@ -46,6 +46,9 @@ class CricketAnalyticsBackendTester:
         self.test_results = {
             'api_health': False,
             'status_endpoints': False,
+            'file_upload_valid': False,
+            'file_upload_invalid_type': False,
+            'file_upload_processing': False,
             'video_analysis_start': False,
             'video_analysis_polling': False,
             'video_analysis_completion': False,
