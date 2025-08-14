@@ -114,7 +114,93 @@ class CricketAnalyticsBackendTester:
         
         return False
     
-    def test_video_analysis_start(self):
+    def test_file_upload_valid(self):
+        """Test uploading a valid video file"""
+        logger.info("Testing valid file upload...")
+        try:
+            # Check if test video exists
+            test_video_path = "/app/test_cricket_video.mp4"
+            if not os.path.exists(test_video_path):
+                logger.error("❌ Test video file not found")
+                return False
+            
+            # Upload the test video
+            with open(test_video_path, 'rb') as video_file:
+                files = {'file': ('test_cricket_video.mp4', video_file, 'video/mp4')}
+                response = requests.post(f"{self.api_url}/upload-video", files=files, timeout=30)
+            
+            if response.status_code == 200:
+                result = response.json()
+                if "analysis_id" in result and "filename" in result:
+                    self.upload_analysis_id = result["analysis_id"]
+                    logger.info(f"✅ Valid file upload successful - Analysis ID: {self.upload_analysis_id}")
+                    self.test_results['file_upload_valid'] = True
+                    return True
+                else:
+                    logger.error(f"❌ Upload response missing required fields: {result}")
+            else:
+                logger.error(f"❌ File upload failed with status {response.status_code}")
+                logger.error(f"Response: {response.text}")
+                
+        except Exception as e:
+            logger.error(f"❌ File upload test failed: {str(e)}")
+            self.test_results['error_details'].append(f"File Upload Valid: {str(e)}")
+        
+        return False
+    
+    def test_file_upload_invalid_type(self):
+        """Test uploading an invalid file type"""
+        logger.info("Testing invalid file type upload...")
+        try:
+            # Create a text file to test invalid upload
+            test_text_content = "This is not a video file"
+            
+            files = {'file': ('test.txt', test_text_content, 'text/plain')}
+            response = requests.post(f"{self.api_url}/upload-video", files=files, timeout=10)
+            
+            if response.status_code == 400:
+                logger.info("✅ Invalid file type correctly rejected")
+                self.test_results['file_upload_invalid_type'] = True
+                return True
+            else:
+                logger.error(f"❌ Invalid file type not rejected - Status: {response.status_code}")
+                
+        except Exception as e:
+            logger.error(f"❌ Invalid file type test failed: {str(e)}")
+            self.test_results['error_details'].append(f"File Upload Invalid Type: {str(e)}")
+        
+        return False
+    
+    def test_file_upload_processing(self):
+        """Test that uploaded file starts processing"""
+        if not hasattr(self, 'upload_analysis_id'):
+            logger.error("❌ No upload analysis ID available for processing test")
+            return False
+        
+        logger.info("Testing uploaded file processing...")
+        try:
+            # Check analysis status
+            response = requests.get(f"{self.api_url}/analysis/{self.upload_analysis_id}", timeout=10)
+            
+            if response.status_code == 200:
+                result = response.json()
+                status = result.get("status")
+                if status in ["initiated", "processing"]:
+                    logger.info(f"✅ Uploaded file processing started - Status: {status}")
+                    self.test_results['file_upload_processing'] = True
+                    # Store this for completion testing
+                    self.analysis_id = self.upload_analysis_id
+                    return True
+                else:
+                    logger.error(f"❌ Unexpected processing status: {status}")
+            else:
+                logger.error(f"❌ Processing status check failed with status {response.status_code}")
+                
+        except Exception as e:
+            logger.error(f"❌ File upload processing test failed: {str(e)}")
+            self.test_results['error_details'].append(f"File Upload Processing: {str(e)}")
+        
+        return False
         """Test starting video analysis"""
         logger.info("Testing video analysis start...")
         try:
