@@ -1,0 +1,32 @@
+{
+  "scores": {
+    "footwork": 5,
+    "head_position": 5,
+    "swing_control": 5,
+    "balance": 5,
+    "follow_through": 5
+  },
+  "feedback": {
+    "footwork": [
+      "Analysis incomplete - please ensure clear video quality"
+    ],
+    "head_position": [
+      "Analysis incomplete - please ensure clear video quality"
+    ],
+    "swing_control": [
+      "Analysis incomplete - please ensure clear video quality"
+    ],
+    "balance": [
+      "Analysis incomplete - please ensure clear video quality"
+    ],
+    "follow_through": [
+      "Analysis incomplete - please ensure clear video quality"
+    ]
+  },
+  "metrics_summary": {
+    "elbow_angle": 0.0,
+    "spine_lean": 0.0,
+    "head_alignment": 0.0,
+    "foot_angle": 0.0
+  }
+}
