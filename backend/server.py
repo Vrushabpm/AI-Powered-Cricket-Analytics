@@ -1,4 +1,4 @@
-from fastapi import FastAPI, APIRouter, HTTPException, BackgroundTasks
+from fastapi import FastAPI, APIRouter, HTTPException, BackgroundTasks, UploadFile, File
 from dotenv import load_dotenv
 from starlette.middleware.cors import CORSMiddleware
 from motor.motor_asyncio import AsyncIOMotorClient
@@ -10,6 +10,7 @@ from typing import List, Dict, Any, Optional
 import uuid
 from datetime import datetime
 import asyncio
+import shutil
 from video_analysis.cricket_analyzer import CricketVideoAnalyzer
 
 ROOT_DIR = Path(__file__).parent
