@@ -313,12 +313,18 @@ class CricketAnalyticsBackendTester:
     def verify_analysis_result(self, result):
         """Verify the structure of analysis result"""
         try:
-            # Check required fields
-            required_fields = ["analysis_id", "status", "video_url", "scores", "feedback"]
+            # Check required fields - video_url is optional for uploaded files
+            required_fields = ["analysis_id", "status", "scores", "feedback"]
             for field in required_fields:
                 if field not in result:
                     logger.error(f"❌ Missing required field: {field}")
                     return False
+            
+            # Check if it's uploaded file or URL-based
+            is_uploaded = result.get("video_source") == "uploaded"
+            if not is_uploaded and "video_url" not in result:
+                logger.error("❌ Missing video_url for URL-based analysis")
+                return False
             
             # Check scores structure
             scores = result.get("scores", {})
