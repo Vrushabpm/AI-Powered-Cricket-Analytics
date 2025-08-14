@@ -44,7 +44,12 @@ class StatusCheckCreate(BaseModel):
     client_name: str
 
 class AnalysisRequest(BaseModel):
-    video_url: str = "https://youtube.com/shorts/vSX3IRxGnNY"
+    video_url: Optional[str] = None
+
+class FileUploadResponse(BaseModel):
+    message: str
+    analysis_id: str
+    filename: str
 
 class AnalysisResult(BaseModel):
     analysis_id: str
