@@ -1,0 +1,35 @@
+{
+  "scores": {
+    "footwork": 2,
+    "head_position": 9,
+    "swing_control": 10,
+    "balance": 8,
+    "follow_through": 7
+  },
+  "feedback": {
+    "footwork": [
+      "Front foot is pointing too wide, align more towards the pitch",
+      "Focus on balanced weight transfer during the shot"
+    ],
+    "head_position": [
+      "Excellent head position over the front knee"
+    ],
+    "swing_control": [
+      "Good elbow positioning for controlled swing",
+      "Maintain smooth acceleration through the ball"
+    ],
+    "balance": [
+      "Good spine angle for balanced shot execution"
+    ],
+    "follow_through": [
+      "Good technique with room for refinement",
+      "Focus on identified weak areas"
+    ]
+  },
+  "metrics_summary": {
+    "elbow_angle": 119.70690768474043,
+    "spine_lean": 28.874216458057724,
+    "head_alignment": 0.07742672808030072,
+    "foot_angle": 74.76812856754522
+  }
+}
