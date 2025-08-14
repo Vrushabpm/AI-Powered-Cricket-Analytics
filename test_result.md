@@ -199,10 +199,8 @@ metadata:
 test_plan:
   current_focus:
     - "Cricket video download and processing"
-    - "FastAPI endpoints for video analysis"
-    - "Biomechanical metrics calculation"
-    - "Cricket technique evaluation system"
-  stuck_tasks: []
+  stuck_tasks:
+    - "Cricket video download and processing"
   test_all: false
   test_priority: "high_first"
 
