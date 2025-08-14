@@ -504,13 +504,15 @@ class CricketAnalyticsBackendTester:
         logger.info("🏏 Starting AthleteRise Cricket Analytics Backend Tests")
         logger.info("=" * 60)
         
-        # Test sequence
+        # Test sequence - prioritize file upload tests
         tests = [
             ("API Health Check", self.test_api_health),
             ("Status Endpoints", self.test_status_endpoints),
+            ("Valid File Upload", self.test_file_upload_valid),
+            ("Invalid File Type Upload", self.test_file_upload_invalid_type),
+            ("File Upload Processing", self.test_file_upload_processing),
             ("Biomechanical Calculations", self.test_biomechanical_calculations),
             ("Evaluation System", self.test_evaluation_system),
-            ("Video Analysis Start", self.test_video_analysis_start),
             ("Video Analysis Polling", self.test_video_analysis_polling),
             ("Video Analysis Completion", self.test_video_analysis_completion),
             ("List All Analyses", self.test_list_analyses),
