@@ -141,7 +141,7 @@ function App() {
     <div className="App">
       <div className="container">
         <header className="header">
-          <h1>🏏 AthleteRise</h1>
+          <h1>🏏 CricBuddy</h1>
           <p>AI-Powered Cricket Analytics</p>
         </header>
 
