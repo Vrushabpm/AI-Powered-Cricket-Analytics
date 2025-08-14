@@ -125,9 +125,59 @@ async def get_status_checks():
     status_checks = await db.status_checks.find().to_list(1000)
     return [StatusCheck(**status_check) for status_check in status_checks]
 
+@api_router.post("/upload-video", response_model=FileUploadResponse)
+async def upload_cricket_video(background_tasks: BackgroundTasks, file: UploadFile = File(...)):
+    """Upload cricket video for analysis"""
+    try:
+        # Validate file type
+        if not file.content_type or not file.content_type.startswith('video/'):
+            raise HTTPException(status_code=400, detail="File must be a video")
+        
+        # Generate analysis ID and file path
+        analysis_id = str(uuid.uuid4())
+        file_extension = Path(file.filename).suffix.lower()
+        if file_extension not in ['.mp4', '.avi', '.mov', '.mkv']:
+            file_extension = '.mp4'  # Default extension
+        
+        video_filename = f"uploaded_{analysis_id}{file_extension}"
+        video_path = OUTPUT_DIR / video_filename
+        
+        # Save uploaded file
+        with open(video_path, "wb") as buffer:
+            shutil.copyfileobj(file.file, buffer)
+        
+        # Initialize analysis record
+        analysis_results[analysis_id] = {
+            "analysis_id": analysis_id,
+            "status": "initiated",
+            "video_source": "uploaded",
+            "filename": file.filename,
+            "created_at": datetime.utcnow(),
+            "completed_at": None,
+            "error_message": None
+        }
+        
+        # Add background task
+        background_tasks.add_task(process_video_analysis, analysis_id, str(video_path), True)
+        
+        return FileUploadResponse(
+            message="Video uploaded successfully. Analysis started.",
+            analysis_id=analysis_id,
+            filename=file.filename
+        )
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Upload failed: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Upload failed: {str(e)}")
+
 @api_router.post("/analyze-video", response_model=Dict[str, str])
 async def start_video_analysis(request: AnalysisRequest, background_tasks: BackgroundTasks):
-    """Start cricket video analysis for the demo video"""
+    """Start cricket video analysis from URL (kept for backward compatibility)"""
+    if not request.video_url:
+        raise HTTPException(status_code=400, detail="video_url is required")
+        
     analysis_id = str(uuid.uuid4())
     
     # Initialize analysis record
@@ -140,8 +190,8 @@ async def start_video_analysis(request: AnalysisRequest, background_tasks: Backg
         "error_message": None
     }
     
-    # Add background task
-    background_tasks.add_task(process_video_analysis, analysis_id, request.video_url)
+    # Add background task (will try to download from URL)
+    background_tasks.add_task(process_video_analysis, analysis_id, request.video_url, False)
     
     return {
         "analysis_id": analysis_id,
