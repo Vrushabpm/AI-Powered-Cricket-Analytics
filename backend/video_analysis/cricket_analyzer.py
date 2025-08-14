@@ -347,13 +347,14 @@ class CricketVideoAnalyzer:
             }
         }
     
-    def analyze_video(self, video_url: str) -> Dict[str, Any]:
-        """Main analysis function"""
+    def analyze_video_file(self, video_path: str) -> Dict[str, Any]:
+        """Main analysis function for local video files"""
         try:
-            logger.info(f"Starting analysis of video: {video_url}")
+            logger.info(f"Starting analysis of video file: {video_path}")
             
-            # Download video
-            video_path = self.download_video(video_url)
+            # Check if file exists
+            if not os.path.exists(video_path):
+                raise Exception(f"Video file not found: {video_path}")
             
             # Open video
             cap = cv2.VideoCapture(video_path)
@@ -434,3 +435,18 @@ class CricketVideoAnalyzer:
             # Cleanup
             if 'cap' in locals():
                 cap.release()
+    
+    def analyze_video(self, video_url: str) -> Dict[str, Any]:
+        """Main analysis function for video URLs (downloads first)"""
+        try:
+            logger.info(f"Starting analysis of video: {video_url}")
+            
+            # Download video
+            video_path = self.download_video(video_url)
+            
+            # Use the local file analysis
+            return self.analyze_video_file(video_path)
+            
+        except Exception as e:
+            logger.error(f"URL-based analysis failed: {str(e)}")
+            raise Exception(f"Video analysis failed: {str(e)}")
